@@ -1,5 +1,6 @@
 package etu2061.framework.servlet;
 import etu2061.framework.Mapping;
+import etu2061.framework.ModelView;
 import etu2061.framework.annotation.UrlAnnotation;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
@@ -12,23 +13,52 @@ import java.util.*;
 
 public class FrontServlet extends HttpServlet{
     HashMap<String, Mapping> MappingUrls = new HashMap<>();
+
+    public void init() throws ServletException{
+        MappingUrls = new HashMap<String, Mapping>();
+        String path = "etu2061/framework/modele/";
+        annotation(path);
+    }
+
     protected void processRequest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         try {
             PrintWriter out = response.getWriter();
             String requestUrl = request.getRequestURL().toString();
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Ma Servlet</title>");
-            out.println("</head>");
-            out.println("<body>");
+            String url = requestUrl.substring(requestUrl.lastIndexOf("/")+1);
+
+            // Sprint 5
             for (HashMap.Entry<String, Mapping> entry : MappingUrls.entrySet()) {
                 String key = entry.getKey();
                 Mapping value = entry.getValue();
-                out.println("<p>Annotation : " + key + "/ Classe : "+ value.getClassName() +"/ Methode : "+ value.getMethod() +"</p>");
+                if (key.equals(url)) {
+                    Class<?> maClasse = Class.forName(value.getClassName());
+                    Method maMethode = maClasse.getDeclaredMethod(value.getMethod());          
+                    String viewName = "";
+                    Class<?> mv = maMethode.getReturnType();
+                    if (mv.isInstance(ModelView.class)) {
+                        ModelView obj = (ModelView) maMethode.invoke(maClasse);
+                        viewName = obj.getUrl();
+                    } else {
+                        throw new Exception("Ne retourne pas de type ModelView");
+                    }
+                    RequestDispatcher dispat = request.getRequestDispatcher("view/"+viewName);
+                    dispat.forward(request, response);
+                }
+                // out.println("<p>Annotation : " + key + "/ Classe : "+ value.getClassName() +"/ Methode : "+ value.getMethod() +"</p>");
             }
-            out.println("<p>URL de la requete: " + requestUrl + "</p>");
-            out.println("</html>");
-            out.println("</body>");
+            // out.println("<html>");
+            // out.println("<head>");
+            // out.println("<title>Ma Servlet</title>");
+            // out.println("</head>");
+            // out.println("<body>");
+            // for (HashMap.Entry<String, Mapping> entry : MappingUrls.entrySet()) {
+            //     String key = entry.getKey();
+            //     Mapping value = entry.getValue();
+            //     out.println("<p>Annotation : " + key + "/ Classe : "+ value.getClassName() +"/ Methode : "+ value.getMethod() +"</p>");
+            // }
+            // out.println("<p>URL de la requete: " + requestUrl + "</p>");
+            // out.println("</html>");
+            // out.println("</body>");
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -79,12 +109,5 @@ public class FrontServlet extends HttpServlet{
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-    }
-
-    @Override
-    public void init() throws ServletException {
-        MappingUrls = new  HashMap<String, Mapping>();
-        String path = "etu2061/framework/modele/";
-        annotation(path);
     }
 }

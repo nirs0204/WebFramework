@@ -7,6 +7,6 @@
     <title>Test</title>
 </head>
 <body>
-    <p><a href="${pageContext.request.contextPath}/FrontServlet">Lien</a></p>
+    <p><a href="${pageContext.request.contextPath}/oui">Lien</a></p>
 </body>
 </html>
