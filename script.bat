@@ -8,11 +8,10 @@ jar cvf ../../../fw.jar ./etu2061
 cd ../../..
 copy fw.jar TestFramework\WEB-INF\lib
 
-
 set CLASSPATH=%CLASSPATH%;%cd%\fw.jar
 javac -classpath "fw.jar;%CLASSPATH%" -d ./TestFramework/WEB-INF/classes ./TestFramework/src/etu2061/framework/*.java   
 @REM javac -cp ./fw.jar -d ./TestFramework/WEB-INF/classes ./TestFramework/src/etu2061/framework/*.java
-
+javac -d ./TestFramework/WEB-INF/classes ./TestFramework/src/etu2061/framework/*.java
 cd ./TestFramework
 jar cvf ../test.war *
 cd ..
