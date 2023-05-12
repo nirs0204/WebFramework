@@ -1,6 +1,7 @@
 package etu2061.framework.modele;
 
 import etu2061.framework.annotation.UrlAnnotation;
+import etu2061.framework.*;
 
 public class Emp {
     String nom;
@@ -27,7 +28,10 @@ public class Emp {
     }
 
     @UrlAnnotation(url = "emp-all")
-    public void findAll(){
+    public ModelView findAll(){
         System.out.println("Listes de tous les employes");
+        ModelView mv = new ModelView();
+        mv.setUrl("view.jsp");
+        return mv;
     }
 }
