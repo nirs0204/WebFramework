@@ -1,6 +1,7 @@
 package etu2061.framework.servlet;
 import etu2061.framework.Mapping;
 import etu2061.framework.ModelView;
+import etu2061.framework.modele.*;
 import etu2061.framework.annotation.UrlAnnotation;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
@@ -36,7 +37,32 @@ public class FrontServlet extends HttpServlet{
                     Class<?> classe = Class.forName("etu2061.framework.modele."+my.getClassName());
                     Method method = classe.getDeclaredMethod(my.getMethod());
                     Class<?> methodReturn = method.getReturnType();
-                    Object obj = classe.newInstance();
+                  
+                    Object obj = classe.getConstructor().newInstance();
+                    Field[] attribut = classe.getDeclaredFields();
+                    Enumeration<String> paramNames = request.getParameterNames();
+                    while (paramNames.hasMoreElements()) {
+                        String paramName = paramNames.nextElement();
+                        for (int i = 0; i < attribut.length; i++) {
+                            if (attribut[i].getName().equalsIgnoreCase(paramName)) {
+                                Method meth = classe.getDeclaredMethod("set"+paramName, attribut[i].getType());
+                                String paramValue = request.getParameter(paramName);
+                                if(attribut[i].getType().getSimpleName().equals("int")){
+                                    out.println(attribut[i].getType());
+                                    meth.invoke(obj, Integer.valueOf(paramValue));
+                                }
+                                else if(attribut[i].getType() == String.class){
+                                    out.println(attribut[i].getType());
+                                    meth.invoke(obj, paramValue);
+                                }
+                                else if(attribut[i].getType().getSimpleName().equals("double")){
+                                    out.println(attribut[i].getType());
+                                    meth.invoke(obj, Double.valueOf(paramValue));
+                                }
+                            }
+                        }
+                    }
+
                     if (ModelView.class.isAssignableFrom(methodReturn)) {
                         ModelView mv = (ModelView) method.invoke(obj);
                         viewName = mv.getUrl();
@@ -110,7 +136,6 @@ public class FrontServlet extends HttpServlet{
         }
         return annotatedClasses;
     }
-  
     // recupere les classes dans un packages ou path
     public ArrayList<String> getClassNames(String directoryPath) {
         ArrayList<String> classNames = new ArrayList<>();

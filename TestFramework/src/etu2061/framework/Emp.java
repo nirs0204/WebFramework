@@ -34,4 +34,12 @@ public class Emp {
         mv.addItem("nombre", valeur);
         return mv;
     }
+
+    @UrlAnnotation(url = "insert-emp")
+    public ModelView save(){
+        ModelView mv = new ModelView("emp_insert.jsp");
+        Emp employe = new Emp(this.getNom(), this.getSalaire());
+        mv.addItem("employe", employe);
+        return mv;
+    }
 }
