@@ -37,7 +37,7 @@ public class FrontServlet extends HttpServlet{
                     Class<?> classe = Class.forName("etu2061.framework.modele."+my.getClassName());
                     Method method = classe.getDeclaredMethod(my.getMethod());
                     Class<?> methodReturn = method.getReturnType();
-                    
+                  
                     Object obj = classe.getConstructor().newInstance();
                     Field[] attribut = classe.getDeclaredFields();
                     Enumeration<String> paramNames = request.getParameterNames();
@@ -136,16 +136,13 @@ public class FrontServlet extends HttpServlet{
         }
         return annotatedClasses;
     }
-
     // recupere les classes dans un packages ou path
     public ArrayList<String> getClassNames(String directoryPath) {
         ArrayList<String> classNames = new ArrayList<>();
         File directory = new File(directoryPath);
-
         if (directory.exists() && directory.isDirectory()) {
             scanClasses(directory, "", classNames);
         }
-
         return classNames;
     }
 
