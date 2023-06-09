@@ -11,14 +11,13 @@ public class ModelView {
     public void setUrl(String url) {
         this.url = url;
     }
-
     public HashMap<String, Object> getData() {
         return data;
     }
     public void setData(HashMap<String, Object> data) {
         this.data = data;
     }
-
+  
     public ModelView(){}
 
     public ModelView(String url){

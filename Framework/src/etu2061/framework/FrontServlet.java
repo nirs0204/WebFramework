@@ -80,7 +80,6 @@ public class FrontServlet extends HttpServlet{
                         UrlAnnotation annotation = method.getAnnotation(UrlAnnotation.class);
                         String annotationValue = annotation.url();
                         String methodename = method.getName();
-                        // String annotationValue = getAnnotationValue(annotation);
                         Mapping mapping = new Mapping(classename, methodename);
                         MappingUrls.put(annotationValue, mapping);  
                     }
@@ -111,16 +110,14 @@ public class FrontServlet extends HttpServlet{
         }
         return annotatedClasses;
     }
-
+  
     // recupere les classes dans un packages ou path
     public ArrayList<String> getClassNames(String directoryPath) {
         ArrayList<String> classNames = new ArrayList<>();
         File directory = new File(directoryPath);
-
         if (directory.exists() && directory.isDirectory()) {
             scanClasses(directory, "", classNames);
         }
-
         return classNames;
     }
 
