@@ -29,9 +29,17 @@ public class Emp {
 
     @UrlAnnotation(url = "emp-all")
     public ModelView findAll(){
-        System.out.println("Listes de tous les employes");
-        ModelView mv = new ModelView();
-        mv.setUrl("view.jsp");
+        ModelView mv = new ModelView("page.jsp");
+        int valeur = 20;
+        mv.addItem("nombre", valeur);
+        return mv;
+    }
+
+    @UrlAnnotation(url = "insert-emp")
+    public ModelView save(){
+        ModelView mv = new ModelView("emp_insert.jsp");
+        Emp employe = new Emp(this.getNom(), this.getSalaire());
+        mv.addItem("employe", employe);
         return mv;
     }
 }
