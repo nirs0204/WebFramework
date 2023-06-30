@@ -1,6 +1,4 @@
-<h2>Insertion Emp</h2>
-<form action="${pageContext.request.contextPath}/insert-emp" method="get">
-    <p>Nom : <input type="text" name="Nom"></p>
-    <p>Salaire : <input type="number" name="Salaire"></p>
-    <p><input type="submit" value="Inserer"></p>
-</form>
+<h2>Sommaire</h2>
+<p><a href="view/form_dept.jsp">Insertion dept</a></p>
+<p><a href="view/form_emp.jsp">Insertion emp</a></p>
+
