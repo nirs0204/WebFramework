@@ -1,7 +1,7 @@
 package etu2061.framework.servlet;
 import etu2061.framework.Mapping;
 import etu2061.framework.ModelView;
-import etu2061.framework.annotation.UrlAnnotation;
+import etu2061.framework.annotation.*;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 
@@ -16,7 +16,7 @@ public class FrontServlet extends HttpServlet{
 
     public void init(){
         MappingUrls = new HashMap<String, Mapping>();
-        ArrayList<String> classes = getClassNames("C:/Program Files/Apache Software Foundation/Tomcat 10.0/webapps/WebFramework2/WEB-INF/classes/etu2061/framework/modele");
+        ArrayList<String> classes = getClassNames("D:/JDK/S4/WebFramework/TestFramework/WEB-INF/classes/etu2061/framework/modele");
         ArrayList<String> classesAnnotees = getClassesWithAnnotatedMethods(classes);
         setUrlMapping(classesAnnotees);
     }
@@ -34,23 +34,44 @@ public class FrontServlet extends HttpServlet{
                 if (ma.getKey().equals(url)) {
                     Mapping my = ma.getValue();
                     Class<?> classe = Class.forName("etu2061.framework.modele."+my.getClassName());
-                    Method method = classe.getDeclaredMethod(my.getMethod());
-                    Class<?> methodReturn = method.getReturnType();
-                    Object obj = classe.newInstance();
-                    if (ModelView.class.isAssignableFrom(methodReturn)) {
-                        ModelView mv = (ModelView) method.invoke(obj);
-                        viewName = mv.getUrl();
-                        String cle = "";
-                        Object valeur = new Object();
-                        for (Map.Entry<String, Object> data : mv.getData().entrySet()) {
-                            cle = data.getKey();
-                            valeur = data.getValue();
-                            request.setAttribute(cle, valeur);
+
+                    Method[] tabMeth = classe.getDeclaredMethods();
+                    for (Method method : tabMeth) {
+                        if (method.getName().equals(my.getMethod())) {
+                            Enumeration<String> paramNames = request.getParameterNames();
+                            Field[] attribut = classe.getDeclaredFields();
+                            Parameter[] tabparams = method.getParameters();
+                            Class<?>[] paramTypes = method.getParameterTypes();
+                            Object[] arguments = new Object[paramTypes.length];
+                            Object obj = classe.getConstructor().newInstance();
+
+                            if (tabparams.length!=0) {
+                                methodWithParameter(paramNames, tabparams, paramTypes, arguments, request);
+                            } else {
+                                methodWithoutParameter(classe, obj, paramNames, attribut, request);
+                            }
+                            Class<?> methodReturn = method.getReturnType();
+                            if (ModelView.class.isAssignableFrom(methodReturn)) {
+                                ModelView mv = null;
+                                if (arguments.length!=0) {
+                                    mv = (ModelView) method.invoke(obj, arguments);
+                                } else {
+                                    mv = (ModelView) method.invoke(obj);
+                                }
+                                viewName = mv.getUrl();
+                                String cle = "";
+                                Object valeur = new Object();
+                                for (Map.Entry<String, Object> data : mv.getData().entrySet()) {
+                                    cle = data.getKey();
+                                    valeur = data.getValue();
+                                    request.setAttribute(cle, valeur);
+                                }
+                                RequestDispatcher dispat = request.getRequestDispatcher("view/"+viewName);
+                                dispat.forward(request, response);
+                                
+                            } else throw new Exception("Ne retourne pas de ModelView");
                         }
-                        RequestDispatcher dispat = request.getRequestDispatcher("view/"+viewName);
-                        dispat.forward(request, response);
-                        
-                    } else throw new Exception("Ne retourne pas de ModelView");
+                    }
                 }
             }
         } catch (Exception e) {
@@ -66,6 +87,59 @@ public class FrontServlet extends HttpServlet{
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         processRequest(request, response);
+    }
+
+    // sprint 8
+    public void methodWithParameter(Enumeration<String> paramNames, Parameter[] tabparams, Class<?>[] paramTypes, Object[] arguments, HttpServletRequest request) throws ServletException, IOException{
+        // Parcourir les noms des paramètres
+        while (paramNames.hasMoreElements()) {
+            String paramName = paramNames.nextElement();
+            // Vérifier si le nom du paramètre correspond à une annotation Param
+            for (int i = 0; i < tabparams.length; i++) {
+                Annotation an = tabparams[i].getAnnotation(Param.class);
+                if (an instanceof Param) {
+                    Param p = (Param) an;
+                    // Si le nom du paramètre correspond à l'annotation, affecter la valeur appropriée
+                    if (p.name().equalsIgnoreCase(paramName)) {
+                        String paramValue = request.getParameter(paramName);
+                        // Affecter les valeurs des arguments en fonction de leur type
+                        if (paramTypes[i] == String.class) {
+                            arguments[i] = paramValue;
+                        } else if (paramTypes[i] == int.class) {
+                            arguments[i] = Integer.parseInt(paramValue);
+                        } else if (paramTypes[i] == double.class) {
+                            arguments[i] = Double.parseDouble(paramValue);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // sprint 7
+    public void methodWithoutParameter(Class<?> classe, Object obj, Enumeration<String> paramNames, Field[] attribut, HttpServletRequest request)throws ServletException, IOException{
+        try {
+            while (paramNames.hasMoreElements()) {
+                String paramName = paramNames.nextElement();
+                for (int i = 0; i < attribut.length; i++) {
+                    if (attribut[i].getName().equalsIgnoreCase(paramName)) {
+                        Method meth = classe.getDeclaredMethod("set"+paramName, attribut[i].getType());
+                        String paramValue = request.getParameter(paramName);
+                        if(attribut[i].getType().getSimpleName().equals("int")){
+                            meth.invoke(obj, Integer.valueOf(paramValue));
+                        }
+                        else if(attribut[i].getType() == String.class){
+                            meth.invoke(obj, paramValue);
+                        }
+                        else if(attribut[i].getType().getSimpleName().equals("double")){
+                            meth.invoke(obj, Double.valueOf(paramValue));
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // Remplir MappingUrls
@@ -110,14 +184,16 @@ public class FrontServlet extends HttpServlet{
         }
         return annotatedClasses;
     }
-  
+
     // recupere les classes dans un packages ou path
     public ArrayList<String> getClassNames(String directoryPath) {
         ArrayList<String> classNames = new ArrayList<>();
         File directory = new File(directoryPath);
+
         if (directory.exists() && directory.isDirectory()) {
             scanClasses(directory, "", classNames);
         }
+
         return classNames;
     }
 
