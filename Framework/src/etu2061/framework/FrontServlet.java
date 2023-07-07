@@ -12,12 +12,15 @@ import java.util.*;
 
 public class FrontServlet extends HttpServlet{
     HashMap<String, Mapping> MappingUrls;
+    HashMap<Class<?>, Object> singletonMappings;
 
     public void init(){
         MappingUrls = new HashMap<String, Mapping>();
         ArrayList<String> classes = getClassNames("D:/JDK/S4/WebFramework/TestFramework/WEB-INF/classes/etu2061/framework/modele");
         ArrayList<String> classesAnnotees = getClassesWithAnnotatedMethods(classes);
         setUrlMapping(classesAnnotees);
+        ArrayList<String> classesAnnoted = getClassesAnnotated(classes);
+        setSingletonMapping(classesAnnoted);
     }
 
     @Deprecated
