@@ -254,6 +254,44 @@ public class FrontServlet extends HttpServlet{
         return annotatedClasses;
     }
 
+    @Deprecated
+    public void setSingletonMapping(ArrayList<String> classnames){
+        for (String classename : classnames) {
+            try {
+                String nameclass = "etu2061.framework.modele."+classename;
+                Class<?> clazz = Class.forName(nameclass);
+                if (clazz.isAnnotationPresent(Scope.class)) {
+                    Scope annotation = clazz.getAnnotation(Scope.class);
+                    Boolean annotationValue = annotation.singleton();
+                    if (annotationValue) {
+                        Object obj = clazz.newInstance();
+                        singletonMappings.put(clazz.getClass(), obj);  
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    // Recupere les classes qui sont annotees
+    public ArrayList<String> getClassesAnnotated(ArrayList<String> classNames) {
+        ArrayList<String> annotatedClasses = new ArrayList<>();
+        for (String className : classNames) {
+            try {
+                String nameclass = "etu2061.framework.modele."+className; 
+                Class<?> clazz = Class.forName(nameclass);
+                if (clazz.isAnnotationPresent(Scope.class)) {
+                    annotatedClasses.add(className);
+                    break;
+                }
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
+        return annotatedClasses;
+    }
+
     // recupere les classes dans un packages ou path
     public ArrayList<String> getClassNames(String directoryPath) {
         ArrayList<String> classNames = new ArrayList<>();

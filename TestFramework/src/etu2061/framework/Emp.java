@@ -3,6 +3,7 @@ package etu2061.framework.modele;
 import etu2061.framework.annotation.*;
 import etu2061.framework.*;
 
+@Scope(singleton = true)
 public class Emp {
     String nom;
     double salaire;

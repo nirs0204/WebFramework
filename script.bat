@@ -3,7 +3,10 @@ javac -d ./Framework/WEB-INF/classes ./Framework/src/etu2061/framework/*.java
 @REM javac -d ./Framework/WEB-INF/classes ./Framework/src/etu2061/framework/FileUpload.java
 @REM javac -d ./Framework/WEB-INF/classes ./Framework/src/etu2061/framework/Param.java
 @REM javac -d ./Framework/WEB-INF/classes ./Framework/src/etu2061/framework/UrlAnnotation.java
+@REM javac -d ./Framework/WEB-INF/classes ./Framework/src/etu2061/framework/Param.java
+@REM javac -d ./Framework/WEB-INF/classes ./Framework/src/etu2061/framework/Scope.java
 @REM javac -d ./Framework/WEB-INF/classes ./Framework/src/etu2061/framework/ModelView.java
+@REM javac -d ./Framework/WEB-INF/classes ./Framework/src/etu2061/framework/FileUpload.java
 @REM javac -d ./Framework/WEB-INF/classes ./Framework/src/etu2061/framework/FrontServlet.java
 
 cd ./Framework/WEB-INF/classes
