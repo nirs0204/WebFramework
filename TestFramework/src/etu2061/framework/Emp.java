@@ -1,8 +1,9 @@
 package etu2061.framework.modele;
 
-import etu2061.framework.annotation.UrlAnnotation;
+import etu2061.framework.annotation.*;
 import etu2061.framework.*;
 
+@Scope(singleton = true)
 public class Emp {
     String nom;
     double salaire;
@@ -39,6 +40,14 @@ public class Emp {
     public ModelView save(){
         ModelView mv = new ModelView("emp_insert.jsp");
         Emp employe = new Emp(this.getNom(), this.getSalaire());
+        mv.addItem("employe", employe);
+        return mv;
+    }
+
+    @UrlAnnotation(url = "emp-insert")
+    public ModelView saveEmp(@Param(name = "nom")String name, @Param(name = "salaire")double salary){
+        ModelView mv = new ModelView("emp_insert.jsp");
+        Emp employe = new Emp(name, salary);
         mv.addItem("employe", employe);
         return mv;
     }

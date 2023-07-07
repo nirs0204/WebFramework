@@ -1,6 +1,5 @@
 package etu2061.framework.servlet;
-import etu2061.framework.Mapping;
-import etu2061.framework.ModelView;
+import etu2061.framework.*;
 import etu2061.framework.annotation.*;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
@@ -38,6 +37,7 @@ public class FrontServlet extends HttpServlet{
                     Method[] tabMeth = classe.getDeclaredMethods();
                     for (Method method : tabMeth) {
                         if (method.getName().equals(my.getMethod())) {
+                            Collection<Part> parts = request.getParts();
                             Enumeration<String> paramNames = request.getParameterNames();
                             Field[] attribut = classe.getDeclaredFields();
                             Parameter[] tabparams = method.getParameters();
@@ -46,9 +46,9 @@ public class FrontServlet extends HttpServlet{
                             Object obj = classe.getConstructor().newInstance();
 
                             if (tabparams.length!=0) {
-                                methodWithParameter(paramNames, tabparams, paramTypes, arguments, request);
+                                methodWithParameter(parts, paramNames, tabparams, paramTypes, arguments, request);
                             } else {
-                                methodWithoutParameter(classe, obj, paramNames, attribut, request);
+                                methodWithoutParameter(parts, classe, obj, paramNames, attribut, request);
                             }
                             Class<?> methodReturn = method.getReturnType();
                             if (ModelView.class.isAssignableFrom(methodReturn)) {
@@ -89,8 +89,31 @@ public class FrontServlet extends HttpServlet{
         processRequest(request, response);
     }
 
-    // sprint 8
-    public void methodWithParameter(Enumeration<String> paramNames, Parameter[] tabparams, Class<?>[] paramTypes, Object[] arguments, HttpServletRequest request) throws ServletException, IOException{
+    public void getFileUpload(Part filepart) {
+        try (InputStream io = filepart.getInputStream()) {
+            ByteArrayOutputStream buffers = new ByteArrayOutputStream();
+            byte[] buffer = new byte[(int) filepart.getSize()];
+            int read;
+            while ((read = io.read(buffer, 0, buffer.length)) != -1) {
+                buffers.write(buffer, 0, read);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public String getFileName(Part part) {
+        String contentDisposition = part.getHeader("content-disposition");
+        String[] parts = contentDisposition.split(";");
+        for (String partStr : parts) {
+            if (partStr.trim().startsWith("filename"))
+                return partStr.substring(partStr.indexOf('=') + 1).trim().replace("\"", "");
+        }
+        return null;
+    }
+
+    // sprint 8 + sprint 9
+    public void methodWithParameter(Collection<Part> parts, Enumeration<String> paramNames, Parameter[] tabparams, Class<?>[] paramTypes, Object[] arguments, HttpServletRequest request) throws ServletException, IOException{
         // Parcourir les noms des paramètres
         while (paramNames.hasMoreElements()) {
             String paramName = paramNames.nextElement();
@@ -109,15 +132,47 @@ public class FrontServlet extends HttpServlet{
                             arguments[i] = Integer.parseInt(paramValue);
                         } else if (paramTypes[i] == double.class) {
                             arguments[i] = Double.parseDouble(paramValue);
+                        } else if (paramTypes[i] == FileUpload.class) {
+                            Part filePart = request.getPart(paramName);
+                            String fileName = filePart.getSubmittedFileName();
+                            long fileSize = filePart.getSize();
+                            Byte[] fileSizeBytes = convertToByteArray(fileSize);
+                            FileUpload fileUp = new FileUpload(fileName, fileSizeBytes);
+                            arguments[i] = fileUp;
                         }
                     }
                 }
             }
         }
+        for (Part part : parts) {
+            for (int i = 0; i < tabparams.length; i++) {
+                Annotation an = tabparams[i].getAnnotation(Param.class);
+                if (an instanceof Param) {
+                    Param p = (Param) an;
+                    // Si le nom du paramètre correspond à l'annotation, affecter la valeur appropriée
+                    if (p.name().equalsIgnoreCase(part.getName()) && paramTypes[i] == FileUpload.class) {
+                        String fileName = getFileName(part);
+                        long fileSize = part.getSize();
+                        Byte[] fileSizeBytes = convertToByteArray(fileSize);
+                        getFileUpload(part);
+                        FileUpload fileUp = new FileUpload(fileName, fileSizeBytes);
+                        arguments[i] = fileUp;
+                    }
+                }
+            }
+        }
+    }
+
+    private Byte[] convertToByteArray(long value) {
+        Byte[] byteArray = new Byte[Long.SIZE / Byte.SIZE];
+        for (int i = 0; i < byteArray.length; i++) {
+            byteArray[i] = (byte) (value >> (i * 8));
+        }
+        return byteArray;
     }
     
     // sprint 7
-    public void methodWithoutParameter(Class<?> classe, Object obj, Enumeration<String> paramNames, Field[] attribut, HttpServletRequest request)throws ServletException, IOException{
+    public void methodWithoutParameter(Collection<Part> parts, Class<?> classe, Object obj, Enumeration<String> paramNames, Field[] attribut, HttpServletRequest request)throws ServletException, IOException{
         try {
             while (paramNames.hasMoreElements()) {
                 String paramName = paramNames.nextElement();
@@ -134,6 +189,20 @@ public class FrontServlet extends HttpServlet{
                         else if(attribut[i].getType().getSimpleName().equals("double")){
                             meth.invoke(obj, Double.valueOf(paramValue));
                         }
+                    }
+                }
+            }
+            for (Part part : parts) {
+                for (int i = 0; i < attribut.length; i++) {
+                    // Si le nom du paramètre correspond à l'annotation, affecter la valeur appropriée
+                    if (attribut[i].getName().equalsIgnoreCase(part.getName()) && attribut[i].getType() == FileUpload.class) {
+                        Method meth = classe.getDeclaredMethod("set"+part.getName(), attribut[i].getType());
+                        String fileName = getFileName(part);
+                        long fileSize = part.getSize();
+                        Byte[] fileSizeBytes = convertToByteArray(fileSize);
+                        getFileUpload(part);
+                        FileUpload fileUp = new FileUpload(fileName, fileSizeBytes);
+                        meth.invoke(obj, fileUp);
                     }
                 }
             }
@@ -177,6 +246,44 @@ public class FrontServlet extends HttpServlet{
                         annotatedClasses.add(className);
                         break;
                     }
+                }
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
+        return annotatedClasses;
+    }
+
+    @Deprecated
+    public void setSingletonMapping(ArrayList<String> classnames){
+        for (String classename : classnames) {
+            try {
+                String nameclass = "etu2061.framework.modele."+classename;
+                Class<?> clazz = Class.forName(nameclass);
+                if (clazz.isAnnotationPresent(Scope.class)) {
+                    Scope annotation = clazz.getAnnotation(Scope.class);
+                    Boolean annotationValue = annotation.singleton();
+                    if (annotationValue) {
+                        Object obj = clazz.newInstance();
+                        singletonMappings.put(clazz.getClass(), obj);  
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    // Recupere les classes qui sont annotees
+    public ArrayList<String> getClassesAnnotated(ArrayList<String> classNames) {
+        ArrayList<String> annotatedClasses = new ArrayList<>();
+        for (String className : classNames) {
+            try {
+                String nameclass = "etu2061.framework.modele."+className; 
+                Class<?> clazz = Class.forName(nameclass);
+                if (clazz.isAnnotationPresent(Scope.class)) {
+                    annotatedClasses.add(className);
+                    break;
                 }
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
